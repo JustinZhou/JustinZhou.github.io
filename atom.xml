@@ -41,7 +41,7 @@
     <link href="http://yoursite.com/2016/08/17/Akamai%20CCU%20V3%20Fast%20Purge/"/>
     <id>http://yoursite.com/2016/08/17/Akamai CCU V3 Fast Purge/</id>
     <published>2016-08-17T02:19:34.004Z</published>
-    <updated>2016-08-17T06:23:54.202Z</updated>
+    <updated>2016-08-17T06:54:23.836Z</updated>
     
     <content type="html"><![CDATA[<h2 id="Concept"><a href="#Concept" class="headerlink" title="Concept"></a>Concept</h2><p>Akamai是著名的CDN内容提供商。它提供了一套purge的API用于清空Edge Server上的缓存，使客户可以拿到最新的内容。目前在用的是CCU OPEN V2 API，主要是基于XML或JASON的一套REST API。通过调用它，会将相应的purge请求加入一个队列中，同时它也提供了query status的API用于查询purge请求的状态。一般情况下，从提交请求到请求执行完成需要4-7min。<br>这里想要介绍的是Akamai那边提供的V3版本的API，目前处于Beta阶段。最大的卖点就是Fast Purge - Featuring 5-second purge。<br><a id="more"></a></p>
 <ul>
