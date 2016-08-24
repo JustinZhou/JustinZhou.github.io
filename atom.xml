@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2016-08-24T02:29:28.497Z</updated>
+  <updated>2016-08-24T03:12:53.500Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,14 +16,104 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title></title>
+    <title>下载（2G以上）大文件支持小记</title>
     <link href="http://yoursite.com/2016/08/24/%E4%B8%8B%E8%BD%BD%EF%BC%882G%E4%BB%A5%E4%B8%8A%EF%BC%89%E5%A4%A7%E6%96%87%E4%BB%B6%E6%94%AF%E6%8C%81%E5%B0%8F%E8%AE%B0/"/>
     <id>http://yoursite.com/2016/08/24/下载（2G以上）大文件支持小记/</id>
     <published>2016-08-24T02:30:40.651Z</published>
-    <updated>2016-08-24T02:29:28.497Z</updated>
+    <updated>2016-08-24T03:12:53.500Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="下载大文件支持"><a href="#下载大文件支持" class="headerlink" title="下载大文件支持"></a>下载大文件支持</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近项目中遇到了下载大文件（大于2G）失败的问题。查看了项目代码之后发现从一开始实现的时候就没有考虑对大文件的支持<i class="fa fa-frown-o"></i>。整个的解决过程就好像打怪升级一般，一步一个脚印……</p>
-<h2 id="Round-1"><a href="#Round-1" class="headerlink" title="Round 1"></a><strong>Round 1</strong></h2><h3 id="下载文件size每次都是2G"><a href="#下载文件size每次都是2G" class="headerlink" title="下载文件size每次都是2G"></a>下载文件size每次都是2G</h3><p>为什么每次下载的文件都是2G，明明在server端的文件是大于2G的。原来在下载的代码实现中，一些基本变量的定义都是int类型的，也就是说最大只能存储$2^{31}-1$的正整数。所以需要将这些有影响的变量类型改为范围更大的类型。考虑到我们是多平台的程序，所以参考一下ANSI C/C++的基本数据类型：<br>|Type |Size |数值范围 |<br>|—–|:—–:|:———|<br>|无值型void|0 byte|无值域|<br>|布尔型bool|1 byte|true   false|<br>|有符号短整型short [int] /signed short [int]|2 byte|-32768~32767|<br>|无符号短整型unsigned short [int]|2 byte|0~65535|<br>|有符号整型int /signed [int]|4 byte|-2147483648~2147483647|<br>|无符号整型unsigned [int]|4 byte|0~4294967295|<br>|有符号长整型long [int]/signed long [int]|4 byte|-2147483648~2147483647|<br>|无符号长整型unsigned long [int]|4 byte|0~4294967295|<br>|有符号 long long|8 byte|-9223372036854775808~9223372036854775807|<br>|无符号long long|8 byte|0~18446744073709552000|<br>|有符号字符型char/signed char|1 byte|-128~127|<br>|无符号字符型unsigned char|1 byte|0~255|<br>|宽字符型wchar_t (unsigned short.)|2 byte|0~65535|<br>|单精度浮点型float|4 byte|-3.4E-38~3.4E+38|<br>|双精度浮点型double|8 byte|1.7E-308~1.7E+308|<br>|long double|8 byte||</p>
+    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近项目中遇到了下载大文件（大于2G）失败的问题。查看了项目代码之后发现从一开始实现的时候就没有考虑对大文件的支持<i class="fa fa-frown-o"></i>。整个的解决过程就好像打怪升级一般，一步一个脚印……</p>
+<h2 id="Round-1"><a href="#Round-1" class="headerlink" title="Round 1"></a><strong>Round 1</strong></h2><h3 id="下载文件size每次都是2G"><a href="#下载文件size每次都是2G" class="headerlink" title="下载文件size每次都是2G"></a>下载文件size每次都是2G</h3><p>为什么每次下载的文件都是2G，明明在server端的文件是大于2G的。原来在下载的代码实现中，一些基本变量的定义都是int类型的，也就是说最大只能存储$2^{31}-1$的正整数。所以需要将这些有影响的变量类型改为范围更大的类型。考虑到我们是多平台的程序，所以参考一下ANSI C/C++的基本数据类型：</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th style="text-align:center">Size</th>
+<th style="text-align:left">数值范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>无值型void</td>
+<td style="text-align:center">0 byte</td>
+<td style="text-align:left">无值域</td>
+</tr>
+<tr>
+<td>布尔型bool</td>
+<td style="text-align:center">1 byte</td>
+<td style="text-align:left">true   false</td>
+</tr>
+<tr>
+<td>有符号短整型short [int] /signed short [int]</td>
+<td style="text-align:center">2 byte</td>
+<td style="text-align:left">-32768~32767</td>
+</tr>
+<tr>
+<td>无符号短整型unsigned short [int]</td>
+<td style="text-align:center">2 byte</td>
+<td style="text-align:left">0~65535</td>
+</tr>
+<tr>
+<td>有符号整型int /signed [int]</td>
+<td style="text-align:center">4 byte</td>
+<td style="text-align:left">-2147483648~2147483647</td>
+</tr>
+<tr>
+<td>无符号整型unsigned [int]</td>
+<td style="text-align:center">4 byte</td>
+<td style="text-align:left">0~4294967295</td>
+</tr>
+<tr>
+<td>有符号长整型long [int]/signed long [int]</td>
+<td style="text-align:center">4 byte</td>
+<td style="text-align:left">-2147483648~2147483647</td>
+</tr>
+<tr>
+<td>无符号长整型unsigned long [int]</td>
+<td style="text-align:center">4 byte</td>
+<td style="text-align:left">0~4294967295</td>
+</tr>
+<tr>
+<td>有符号 long long</td>
+<td style="text-align:center">8 byte</td>
+<td style="text-align:left">-9223372036854775808~9223372036854775807</td>
+</tr>
+<tr>
+<td>无符号long long</td>
+<td style="text-align:center">8 byte</td>
+<td style="text-align:left">0~18446744073709552000</td>
+</tr>
+<tr>
+<td>有符号字符型char/signed char</td>
+<td style="text-align:center">1 byte</td>
+<td style="text-align:left">-128~127</td>
+</tr>
+<tr>
+<td>无符号字符型unsigned char</td>
+<td style="text-align:center">1 byte</td>
+<td style="text-align:left">0~255</td>
+</tr>
+<tr>
+<td>宽字符型wchar_t (unsigned short.)</td>
+<td style="text-align:center">2 byte</td>
+<td style="text-align:left">0~65535</td>
+</tr>
+<tr>
+<td>单精度浮点型float</td>
+<td style="text-align:center">4 byte</td>
+<td style="text-align:left">-3.4E-38~3.4E+38</td>
+</tr>
+<tr>
+<td>双精度浮点型double</td>
+<td style="text-align:center">8 byte</td>
+<td style="text-align:left">1.7E-308~1.7E+308</td>
+</tr>
+<tr>
+<td>long double</td>
+<td style="text-align:center">8 byte</td>
+</tr>
+</tbody>
+</table>
 <p>这里我们选用signed long long类型， 它可表示的最大的正整数是$2^{63}-1$，足以应付4G的文件。定义如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> sint64_t_defined</span></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> sint64_t_defined</span></div><div class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">long</span> <span class="keyword">long</span>     Tsint64;<span class="comment">//It's illegal in C90. It's legel in C99. </span></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div></pre></td></tr></table></figure></p>
 <p>接着就把所有有影响的变量类型改为Tsint64。OK，终于折腾过了第一关。</p>
 <h2 id="Round-2"><a href="#Round-2" class="headerlink" title="Round 2"></a><strong>Round 2</strong></h2><h3 id="检查文件size失败"><a href="#检查文件size失败" class="headerlink" title="检查文件size失败"></a>检查文件size失败</h3><p>通过前面的努力，终于可以将大于2G的文件下下来了。可是好景不长，程序走到检查文件size的时候fail了。手工检查了下文件的size是没有问题的，但是程序中获取的size是一个很奇怪的数。其中获取size的代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">filelen</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fname)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span> (fname == <span class="literal">NULL</span> || fname[<span class="number">0</span>] == <span class="string">'\0'</span>)</div><div class="line">		<span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">	FILE *fp = fopen (fname, <span class="string">"rb"</span>);</div><div class="line">	<span class="keyword">if</span> (!fp)</div><div class="line">		<span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">	fseek (fp, <span class="number">0</span>, SEEK_END);</div><div class="line">	<span class="keyword">long</span> length = ftell (fp);</div><div class="line">	fclose (fp);</div><div class="line">	<span class="keyword">return</span> length == <span class="number">-1</span> ? <span class="number">0</span> : (<span class="keyword">unsigned</span> <span class="keyword">int</span>)length;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
@@ -61,10 +151,12 @@
     
     <summary type="html">
     
-      &lt;h1 id=&quot;下载大文件支持&quot;&gt;&lt;a href=&quot;#下载大文件支持&quot; class=&quot;headerlink&quot; title=&quot;下载大文件支持&quot;&gt;&lt;/a&gt;下载大文件支持&lt;/h1&gt;&lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背
+      &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;最近项目中遇到了下载大文件（大于2G）失败的问题。查看了项目代码之后发现从一开始实现的时候就没有考虑对大文件的支持&lt;i class=&quot;fa 
     
     </summary>
     
+    
+      <category term="2G, Big File Size, 大文件" scheme="http://yoursite.com/tags/2G-Big-File-Size-%E5%A4%A7%E6%96%87%E4%BB%B6/"/>
     
   </entry>
   
