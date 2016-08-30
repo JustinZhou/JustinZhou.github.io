@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2016-08-26T09:50:24.457Z</updated>
+  <updated>2016-08-30T03:27:07.665Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,13 +16,37 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>二进制差量更新算法比较</title>
+    <link href="http://yoursite.com/2016/08/30/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%B7%AE%E9%87%8F%E6%9B%B4%E6%96%B0%E7%AE%97%E6%B3%95%E6%AF%94%E8%BE%83/"/>
+    <id>http://yoursite.com/2016/08/30/二进制差量更新算法比较/</id>
+    <published>2016-08-30T03:23:35.631Z</published>
+    <updated>2016-08-30T03:27:07.665Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>本文对目前比较流行的基于二进制差量更新算法的几个实现进行了一个比较。<br>差量更新算法的核心思想是尽可能多的利用old文件中已有的内容，尽可能少的加入新的内容来构建new文件。通常的做法是对old文件和new文件做子字符串匹配或使用hash技术，提取公共部分，将new文件中剩余的部分打包成patch包，在Patch阶段中，用copying和insertion两个基本操作即可将old文件和patch包合成new文件。<br><a id="more"></a><br><img src="/img/patching_diagram.jpg" alt="差量更新示意图">比较时主要基于以下标准：<br><img src="/img/compare_standard.jpg" alt="比较标准"></p>
+<h2 id="Approach"><a href="#Approach" class="headerlink" title="Approach"></a>Approach</h2><p><img src="/img/diff_approach.jpg" alt="diff approach"></p>
+<h2 id="Evaluation"><a href="#Evaluation" class="headerlink" title="Evaluation"></a>Evaluation</h2><p>Rdiff：做出的diff太大。<br>Bsdiff：它需要max(17<em>n,9</em>n+m)+O(1) bytes的内存，n是old文件的size，m是新文件的size。换句话说，它不能处理特别大的文件。<br>Courgetee：google的项目，初衷是减少Chrome的网络流量。基于bsdiff针对可执行文件类型做了些优化，所以它也不能处理太大的文件。<br>OpenVcdiff：它用了delta encoding算法(RFC3284)。它的实现是将old文件全部加载到内存中处理，所以它也不能处理太大文件。<br>zdelta：不支持windows平台，并且处理大文件时性能比较低。<br>xdelta3：采用delta encoding算法，支持特大文件，性能好并且平台独立。但是它遵循GPL v2 license，对商业应用不友好。<br>Rtpatch Server：rtpatch的增强版，提供了windows平台的多线程build功能。属于一款应用较广泛的商业软件。<br><img src="/img/compare_metrix.jpg" alt="比较矩阵"><br>接着从build diff的size和CPU以及内存消耗方面比较了一下rtpatchserver和xdelta3。<br><img src="/img/P.4.png" alt="build diff size compare"><br><img src="/img/compare_performance.jpg" alt="performance compare"></p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>通过比较可以发现，若是商业应用的话满足所有标准的只有RtpatchServer。若是内部使用的话则xdelta3的表现明显好于其他。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;Introduction&quot;&gt;&lt;a href=&quot;#Introduction&quot; class=&quot;headerlink&quot; title=&quot;Introduction&quot;&gt;&lt;/a&gt;Introduction&lt;/h2&gt;&lt;p&gt;本文对目前比较流行的基于二进制差量更新算法的几个实现进行了一个比较。&lt;br&gt;差量更新算法的核心思想是尽可能多的利用old文件中已有的内容，尽可能少的加入新的内容来构建new文件。通常的做法是对old文件和new文件做子字符串匹配或使用hash技术，提取公共部分，将new文件中剩余的部分打包成patch包，在Patch阶段中，用copying和insertion两个基本操作即可将old文件和patch包合成new文件。&lt;br&gt;
+    
+    </summary>
+    
+    
+      <category term="Delta Encoding, 差量更新, VCDiff, Rtpatch" scheme="http://yoursite.com/tags/Delta-Encoding-%E5%B7%AE%E9%87%8F%E6%9B%B4%E6%96%B0-VCDiff-Rtpatch/"/>
+    
+  </entry>
+  
+  <entry>
     <title>OpenSSL与fPIC</title>
     <link href="http://yoursite.com/2016/08/26/OpenSSL%E4%B8%8EfPIC/"/>
     <id>http://yoursite.com/2016/08/26/OpenSSL与fPIC/</id>
     <published>2016-08-26T09:49:01.305Z</published>
-    <updated>2016-08-26T09:50:24.457Z</updated>
+    <updated>2016-08-30T03:27:25.425Z</updated>
     
-    <content type="html"><![CDATA[<p>看到标题大家可能会想，openssl和fPIC会有什么关系呢？这要从最近遇到的一个问题说起。由于openssl去年和今年被爆出了很多漏洞，而我们项目中用到了openssl较老的版本，所以需要重新编译openssl的新版本。这本应该是一间很简单的事，可是却遇到了问题。在RedHat 7.x平台上，编译之后的程序在跑的时候直接crash了，而且奇怪的是在RedHat AS4平台上没有问题。废话不多说，上错误栈:<br><figure class="highlight oxygene"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">Program terminated <span class="keyword">with</span> signal <span class="number">11</span>, Segmentation fault.</div><div class="line"><span class="string">#0</span> <span class="number">0</span>xf7779875c <span class="keyword">in</span> sha1_block_data_order () <span class="keyword">from</span> /opt/xxx/xxx/libxxx.so</div><div class="line"><span class="string">#1</span> <span class="number">0</span>xf7797926 <span class="keyword">in</span> SHA1_Update () <span class="keyword">from</span> /opt/xxx/xxx/libxxx.so</div><div class="line"><span class="string">#2</span> <span class="number">0</span>x00000000 <span class="keyword">in</span> ?? ()</div></pre></td></tr></table></figure></p>
+    <content type="html"><![CDATA[<p>看到标题大家可能会想，openssl和fPIC会有什么关系呢？这要从最近遇到的一个问题说起。由于openssl去年和今年被爆出了很多漏洞，而我们项目中用到了openssl较老的版本，所以需要重新编译openssl的新版本。这本应该是一间很简单的事，可是却遇到了问题。在RedHat 7.x平台上，编译之后的程序在跑的时候直接crash了，而且奇怪的是在RedHat AS4平台上没有问题。<br><a id="more"></a><br>废话不多说，上错误栈:<br><figure class="highlight oxygene"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">Program terminated <span class="keyword">with</span> signal <span class="number">11</span>, Segmentation fault.</div><div class="line"><span class="string">#0</span> <span class="number">0</span>xf7779875c <span class="keyword">in</span> sha1_block_data_order () <span class="keyword">from</span> /opt/xxx/xxx/libxxx.so</div><div class="line"><span class="string">#1</span> <span class="number">0</span>xf7797926 <span class="keyword">in</span> SHA1_Update () <span class="keyword">from</span> /opt/xxx/xxx/libxxx.so</div><div class="line"><span class="string">#2</span> <span class="number">0</span>x00000000 <span class="keyword">in</span> ?? ()</div></pre></td></tr></table></figure></p>
 <p>以<code>sha1_block_data_order</code>为关键字经过一番搜索，发现网上也有遇到类似crash问题的人。给出的解释是，因为多线程调用，openssl在多线程调用时为了保证线程安全，需要在每个调用线程里明确设置两个callback函数。引用如下：</p>
 <blockquote>
 <p>Is OpenSSL thread-safe?<br>Yes (with limitations: an SSL connection may not concurrently be used by multiple threads). On Windows and many Unix systems, OpenSSL automatically uses the multi-threaded versions of the standard libraries. If your platform is not one of these, consult the INSTALL file.</p>
@@ -39,7 +63,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;看到标题大家可能会想，openssl和fPIC会有什么关系呢？这要从最近遇到的一个问题说起。由于openssl去年和今年被爆出了很多漏洞，而我们项目中用到了openssl较老的版本，所以需要重新编译openssl的新版本。这本应该是一间很简单的事，可是却遇到了问题。在Red
+      &lt;p&gt;看到标题大家可能会想，openssl和fPIC会有什么关系呢？这要从最近遇到的一个问题说起。由于openssl去年和今年被爆出了很多漏洞，而我们项目中用到了openssl较老的版本，所以需要重新编译openssl的新版本。这本应该是一间很简单的事，可是却遇到了问题。在RedHat 7.x平台上，编译之后的程序在跑的时候直接crash了，而且奇怪的是在RedHat AS4平台上没有问题。&lt;br&gt;
     
     </summary>
     
@@ -53,9 +77,9 @@
     <link href="http://yoursite.com/2016/08/24/%E4%B8%8B%E8%BD%BD%EF%BC%882G%E4%BB%A5%E4%B8%8A%EF%BC%89%E5%A4%A7%E6%96%87%E4%BB%B6%E6%94%AF%E6%8C%81%E5%B0%8F%E8%AE%B0/"/>
     <id>http://yoursite.com/2016/08/24/下载（2G以上）大文件支持小记/</id>
     <published>2016-08-24T02:30:40.651Z</published>
-    <updated>2016-08-26T01:56:13.956Z</updated>
+    <updated>2016-08-30T03:26:47.748Z</updated>
     
-    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近项目中遇到了下载大文件（大于2G）失败的问题。查看了代码之后发现从一开始实现的时候就没有考虑对大文件的支持<i class="fa fa-frown-o"></i>。老板追的紧，没办法只能硬着头皮上。整个的解决过程就好像打怪升级一般，一步一个脚印。</p>
+    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近项目中遇到了下载大文件（大于2G）失败的问题。查看了代码之后发现从一开始实现的时候就没有考虑对大文件的支持<i class="fa fa-frown-o"></i>。老板追的紧，没办法只能硬着头皮上。整个的解决过程就好像打怪升级一般，一步一个脚印。<br><a id="more"></a></p>
 <h2 id="Round-1"><a href="#Round-1" class="headerlink" title="Round 1"></a><strong>Round 1</strong></h2><h3 id="下载文件size每次都是2G"><a href="#下载文件size每次都是2G" class="headerlink" title="下载文件size每次都是2G"></a>下载文件size每次都是2G</h3><p>为什么每次下载的文件都是2G，明明在server端的文件是大于2G的。通过调试发现原来在下载的代码实现中，一些基本变量的定义都是int类型的，也就是说最大只能存储 $2^{31}-1$ 的正整数。所以需要将这些有影响的变量类型改为范围更大的类型。考虑到项目是多平台程序，所以参考了一下ANSI C/C++的基本数据类型：</p>
 <table>
 <thead>
@@ -184,7 +208,7 @@
     
     <summary type="html">
     
-      &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;最近项目中遇到了下载大文件（大于2G）失败的问题。查看了代码之后发现从一开始实现的时候就没有考虑对大文件的支持&lt;i class=&quot;fa fa
+      &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;最近项目中遇到了下载大文件（大于2G）失败的问题。查看了代码之后发现从一开始实现的时候就没有考虑对大文件的支持&lt;i class=&quot;fa fa-frown-o&quot;&gt;&lt;/i&gt;。老板追的紧，没办法只能硬着头皮上。整个的解决过程就好像打怪升级一般，一步一个脚印。&lt;br&gt;
     
     </summary>
     
