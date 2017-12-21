@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2016-09-06T08:50:58.158Z</updated>
+  <updated>2017-12-21T09:17:08.166Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,10 +16,61 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>C#调用C++ dll之P/Invoke点滴总结</title>
+    <link href="http://yoursite.com/2017/12/21/C%20sharp%E8%B0%83%E7%94%A8C++%20dll%E4%B9%8BPInvoke%E7%82%B9%E6%BB%B4%E6%80%BB%E7%BB%93/"/>
+    <id>http://yoursite.com/2017/12/21/C sharp调用C++ dll之PInvoke点滴总结/</id>
+    <published>2017-12-21T08:42:47.736Z</published>
+    <updated>2017-12-21T09:17:08.166Z</updated>
+    
+    <content type="html"><![CDATA[<p>P/Invoke的全称是Platform Invoke (平台调用),它实际上是一种函数调用机制通 过P/Invoke我们就可以调用非托管DLL中的函数。<br>P／Invoke依次执行以下操作:</p>
+<ul>
+<li>查找包含该函数的非托管DLL</li>
+<li>将该非托管DLL加载到内存中</li>
+<li>查找函数在内存中的地址并将其参数按照函数的调用约定压栈</li>
+<li>将控制权转移给非托管函数</li>
+</ul>
+<a id="more"></a>
+<p><img src="/img/pinvoke.jpg" alt="P/Invoke调用示意图"></p>
+<p>由于项目需要用到了C#代码调用C++的动态库，期间遇到了参数封装与传送的问题，记录于此。</p>
+<ul>
+<li>对于不对称的结构体数组，最好定义紧凑型排列以避免编译器自动做字节对齐。</li>
+</ul>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">[System.<span class="keyword">Runtime</span>.InteropServices.StructLayoutAttribute(System.<span class="keyword">Runtime</span>.InteropServices.LayoutKind.Sequential, CharSet = System.<span class="keyword">Runtime</span>.InteropServices.CharSet.Ansi, Pack=<span class="number">1</span>)]</div><div class="line"><span class="keyword">public</span> struct SRawStockDict</div><div class="line">&#123;</div><div class="line">    <span class="comment">/// UINT32-&gt;unsigned int</span></div><div class="line">    <span class="keyword">public</span> uint m_dwStockID;</div><div class="line">    <span class="comment">/// char</span></div><div class="line">    <span class="keyword">public</span> <span class="keyword">byte</span> m_cMarket;</div><div class="line">    <span class="comment">/// char</span></div><div class="line">    <span class="keyword">public</span> <span class="keyword">byte</span> m_cType;</div><div class="line">    <span class="comment">/// char[23]</span></div><div class="line">    [System.<span class="keyword">Runtime</span>.InteropServices.MarshalAsAttribute(System.<span class="keyword">Runtime</span>.InteropServices.UnmanagedType.ByValTStr, SizeConst = <span class="number">23</span>)]</div><div class="line">    <span class="keyword">public</span> string m_cCode;</div><div class="line">    <span class="comment">/// char[23]</span></div><div class="line">    [System.<span class="keyword">Runtime</span>.InteropServices.MarshalAsAttribute(System.<span class="keyword">Runtime</span>.InteropServices.UnmanagedType.ByValTStr, SizeConst = <span class="number">23</span>)]</div><div class="line">    <span class="keyword">public</span> string m_cName;</div><div class="line">    <span class="comment">/// char[31]</span></div><div class="line">    [System.<span class="keyword">Runtime</span>.InteropServices.MarshalAsAttribute(System.<span class="keyword">Runtime</span>.InteropServices.UnmanagedType.ByValTStr, SizeConst = <span class="number">31</span>)]</div><div class="line">    <span class="keyword">public</span> string m_cNameEx;</div><div class="line">    <span class="comment">/// char</span></div><div class="line">    <span class="keyword">public</span> <span class="keyword">byte</span> m_cFlag;</div><div class="line">    <span class="comment">/// UINT32-&gt;unsigned int</span></div><div class="line">    <span class="keyword">public</span> uint m_dwObjID;</div><div class="line">    <span class="comment">/// char</span></div><div class="line">    <span class="keyword">public</span> <span class="keyword">byte</span> m_cOptType;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如上，若不加Pack=1。那么用Marshal.Sizeof(typeof(SRawStockDict))获取到的大小是92。加上Pack=1之后得到的大小就是89，这样在传入被调用的C++函数中不会出错。</p>
+<ul>
+<li>若导出的C++函数中有指向结构体数组的指针，并且该参数既会作为输入也会作为输出。那么类型匹配如：</li>
+</ul>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">C</span>++</div><div class="line">SRawStockDict *pNew</div><div class="line"><span class="keyword">C</span>#</div><div class="line">[<span class="keyword">In</span>, <span class="keyword">Out</span>] SRawStockDict[] pNew</div></pre></td></tr></table></figure>
+<p>对于SRawStockDict *&amp;pNew 这种特殊的情况 ，若有必要的话可以把C++函数再封装一层，在内部再做一次赋值。同时调用的时候就做好空间申请。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">SRawStockDict[] sRawStockDict = new SRawStockDict[20000];</div><div class="line">for (int i = 0; i &lt; sRawStockDict.Length; i++)</div><div class="line"> &#123;</div><div class="line">      sRawStockDict[i] = new SRawStockDict();</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>char[ ]可直接用byte[ ]作为匹配输入。</li>
+</ul>
+<p>最后，推荐一个专门用来做P/Invoke参数及类型转换的工具。<br><a href="http://download.microsoft.com/download/f/2/7/f279e71e-efb0-4155-873d-5554a0608523/CLRInsideOut2008_01.exe" target="_blank" rel="external">P/Invoke Interop Assistant GUI Tool</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;P/Invoke的全称是Platform Invoke (平台调用),它实际上是一种函数调用机制通 过P/Invoke我们就可以调用非托管DLL中的函数。&lt;br&gt;P／Invoke依次执行以下操作:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;查找包含该函数的非托管DLL&lt;/li&gt;
+&lt;li&gt;将该非托管DLL加载到内存中&lt;/li&gt;
+&lt;li&gt;查找函数在内存中的地址并将其参数按照函数的调用约定压栈&lt;/li&gt;
+&lt;li&gt;将控制权转移给非托管函数&lt;/li&gt;
+&lt;/ul&gt;
+    
+    </summary>
+    
+    
+      <category term="C#, C++, P/Invoke" scheme="http://yoursite.com/tags/C-C-P-Invoke/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Nhibernate batch query timeout问题的解决</title>
     <link href="http://yoursite.com/2016/09/06/Nhibernate%20batch%20query%20timeout%E9%97%AE%E9%A2%98%E7%9A%84%E8%A7%A3%E5%86%B3/"/>
     <id>http://yoursite.com/2016/09/06/Nhibernate batch query timeout问题的解决/</id>
-    <published>2016-09-06T08:41:13.359Z</published>
+    <published>2016-09-06T08:41:13.360Z</published>
     <updated>2016-09-06T08:50:58.158Z</updated>
     
     <content type="html"><![CDATA[<p>最近项目中遇到了一个奇怪的问题。在调用Nhibernate去更新数据库的时候不定期的会出现timeout exception：<br><code>NHibernate.HibernateException: An exception occurred when executing batch queries ---&gt; System.Data.SqlClient.SqlException: Timeout expired.  The timeout period elapsed prior to completion of the operation or the server is not responding.</code></p>
@@ -282,7 +333,7 @@
     <title>Akamai CCU V3 Fast Purge</title>
     <link href="http://yoursite.com/2016/08/17/Akamai%20CCU%20V3%20Fast%20Purge/"/>
     <id>http://yoursite.com/2016/08/17/Akamai CCU V3 Fast Purge/</id>
-    <published>2016-08-17T02:19:34.004Z</published>
+    <published>2016-08-17T02:19:34.005Z</published>
     <updated>2016-08-17T09:40:17.263Z</updated>
     
     <content type="html"><![CDATA[<h2 id="Concept"><a href="#Concept" class="headerlink" title="Concept"></a>Concept</h2><p>Akamai是著名的CDN内容提供商。它提供了一套purge的API用于清空Edge Server上的缓存，使客户可以拿到最新的内容。目前在用的是CCU OPEN V2 API，主要是基于XML或JASON的一套REST API。通过调用它，会将相应的purge请求加入一个队列中，同时它也提供了query status的API用于查询purge请求的状态。一般情况下，从提交请求到请求执行完成需要4-7min。<br>这里想要介绍的是Akamai那边提供的V3版本的API，目前处于Beta阶段。最大的卖点就是Fast Purge - Featuring 5-second purge。<br><a id="more"></a></p>
